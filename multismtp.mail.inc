@@ -39,7 +39,7 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
       $message['body'] = drupal_wrap_mail($message['body']);
     }
 
-    multismtp_watchdog('multismtp', 'Formatted: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
+    multismtp_debug('multismtp', 'Formatted: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
     return $message;
   }
 
@@ -60,7 +60,7 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
             || !$message['params']['skip_queue'])
     ) {
       smtp_send_queue($message);
-      multismtp_watchdog(
+      multismtp_debug(
         'multismtp', 'Queueing mail from: @from for: @to',
         [
           '@to' => $message['to'],
@@ -125,10 +125,10 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
     $result = $successCount != 0;
 
     if(count($failedRecipients)) {
-      multismtp_watchdog('multismtp', 'Error sending mail to %to', ['%to' => json_encode($failedRecipients)], WATCHDOG_ERROR);
+      multismtp_debug('multismtp', 'Error sending mail to %to', ['%to' => json_encode($failedRecipients)], WATCHDOG_ERROR);
     }
 
-    multismtp_watchdog('multismtp', 'Sending: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
+    multismtp_debug('multismtp', 'Sending: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
     return $result;
   }
 }

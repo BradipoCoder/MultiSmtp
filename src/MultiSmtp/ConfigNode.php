@@ -106,7 +106,7 @@ class ConfigNode {
       }
     }
     if (!$found) {
-      multismtp_watchdog('multismtp', 'Configuration for sender %sender not found. Using default config.', ['%sender' => $sender], WATCHDOG_DEBUG);
+      multismtp_debug('multismtp', 'Configuration for sender %sender not found. Using default config.', ['%sender' => $sender], WATCHDOG_DEBUG);
       $defaultConfigNid = variable_get('multismtp_default_config_node', FALSE);
       $node = self::getConfigNodeById($defaultConfigNid);
     }

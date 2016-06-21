@@ -118,8 +118,8 @@ function multismtp_mail($key, &$message, $params) {
  *
  * @see watchdog()
  */
-function multismtp_watchdog($type, $message, $variables = array(),
-                            $severity = WATCHDOG_NOTICE, $link = NULL) {
+function multismtp_debug($type, $message, $variables = array(),
+                         $severity = WATCHDOG_NOTICE, $link = NULL) {
   $allowedLevels = [
     MULTISMTP_LOGGING_NONE => [],
     MULTISMTP_LOGGING_ERRORS => [
