@@ -1,0 +1,21 @@
+{
+  "name": "jack/multismtp",
+  "description": "Provides possibility to create and use multiple outgoing smtp account configurations",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Adam Jakab",
+      "email": "adam.jakab@mekit.it"
+    }
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "require": {
+    "swiftmailer/swiftmailer": "^5.4"
+  },
+  "autoload": {
+    "psr-0": {
+      "MultiSmtp\\": "src/"
+    }
+  }
+}

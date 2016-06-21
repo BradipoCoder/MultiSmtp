@@ -1,0 +1,145 @@
+<?php
+require_once("vendor/autoload.php");
+
+/**
+ * Admin config menu path
+ */
+define('MULTISMTP_MENU_PATH', 'admin/config/system/multismtp');
+
+/**
+ * Logging is disabled
+ */
+define('MULTISMTP_LOGGING_NONE', 0);
+
+/**
+ * Full logging
+ */
+define('MULTISMTP_LOGGING_ALL', 1);
+
+/**
+ * Error logging
+ */
+define('MULTISMTP_LOGGING_ERRORS', 2);
+
+
+/**
+ * Implements hook_help().
+ *
+ * @return string|null
+ */
+function multismtp_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#multismtp':
+      return t('Provides possibility to create and use multiple outgoing smtp account configurations.');
+  }
+  return NULL;
+}
+
+/**
+ * Implements hook_menu().
+ *
+ * @return array
+ */
+function multismtp_menu() {
+  $items[MULTISMTP_MENU_PATH] = [
+    'title' => 'MultiSmtp',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['multismtp_admin_settings'],
+    'access arguments' => ['access backup and migrate'],
+    'weight' => 0,
+    'description' => 'Configure MultiSmtp module.',
+    'file' => 'multismtp.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  ];
+
+  $items[MULTISMTP_MENU_PATH . '/configure'] = [
+    'title' => 'Configure',
+    'weight' => 1,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  ];
+
+  $items[MULTISMTP_MENU_PATH . '/configtest'] = [
+    'title' => 'Test',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['multismtp_admin_tests'],
+    'access arguments' => ['access backup and migrate'],
+    'weight' => 2,
+    'description' => 'Test your configuration.',
+    'file' => 'multismtp.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  ];
+
+  return $items;
+}
+
+
+/**
+ * A menu callback helper. Handles file includes and interactivity setting.
+ */
+function multismtp_menu_callback($include, $function, $interactive = TRUE) {
+  return NULL;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function multismtp_permission() {
+  return array(
+    'administer multismtp module' => array(
+      'title' => t('Administer MultiSmtp module'),
+      'description' => t('Perform administration tasks for MultiSmtp module.')
+    )
+  );
+}
+
+/**
+ * The function called by the drupal_mail method to add the body.
+ * Only used for sending test mails.
+ *
+ * @param $key
+ * @param $message
+ * @param $params
+ */
+function multismtp_mail($key, &$message, $params) {
+  if ($key == "test") {
+    $message['subject'] = "MultiSmtp Test E-mail";
+    $message['body'] = "This <strong>mail</strong> was sent through the multismtp module.";
+  }
+}
+
+/**
+ * Wrapper to watchdog with internal debug check
+ *
+ * @param string $type
+ * @param string $message
+ * @param array $variables
+ * @param int $severity
+ * @param string $link
+ *
+ * @see watchdog()
+ */
+function multismtp_watchdog($type, $message, $variables = array(),
+                            $severity = WATCHDOG_NOTICE, $link = NULL) {
+  $allowedLevels = [
+    MULTISMTP_LOGGING_NONE => [],
+    MULTISMTP_LOGGING_ERRORS => [
+      WATCHDOG_EMERGENCY,
+      WATCHDOG_ALERT,
+      WATCHDOG_CRITICAL,
+      WATCHDOG_ERROR
+    ],
+    MULTISMTP_LOGGING_ALL => [
+      WATCHDOG_EMERGENCY,
+      WATCHDOG_ALERT,
+      WATCHDOG_CRITICAL,
+      WATCHDOG_ERROR,
+      WATCHDOG_WARNING,
+      WATCHDOG_INFO,
+      WATCHDOG_DEBUG
+    ],
+  ];
+  $debugLevel = variable_get('multismtp_debugging', MULTISMTP_LOGGING_ERRORS);
+  if (in_array($severity, $allowedLevels[$debugLevel])) {
+    watchdog($type, $message, $variables, $severity, $link);
+  }
+}

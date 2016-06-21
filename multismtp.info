@@ -1,0 +1,10 @@
+name = MultiSmtp
+description = Provides possibility to create and use multiple outgoing smtp account configurations
+package = Mail
+core = 7.x
+php = 5.6
+configure = admin/config/system/multismtp
+files[] = multismtp.mail.inc
+dependencies[] = features
+dependencies[] = field_group
+dependencies[] = password_field
