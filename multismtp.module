@@ -72,14 +72,6 @@ function multismtp_menu() {
   return $items;
 }
 
-
-/**
- * A menu callback helper. Handles file includes and interactivity setting.
- */
-function multismtp_menu_callback($include, $function, $interactive = TRUE) {
-  return NULL;
-}
-
 /**
  * Implements hook_permission().
  */
@@ -101,9 +93,30 @@ function multismtp_permission() {
  * @param $params
  */
 function multismtp_mail($key, &$message, $params) {
-  if ($key == "test") {
-    $message['subject'] = "MultiSmtp Test E-mail";
-    $message['body'] = "This <strong>mail</strong> was sent through the multismtp module.";
+  if ($key != "test") {
+    return;
+  }
+
+  $subject = "MultiSmtp Test E-mail";
+  if (isset($params["subject"]) && !empty($params["subject"])) {
+    $subject = $params["subject"];
+  }
+  $message['subject'] = $subject;
+
+  $body = "This E-mail was sent through the <strong>multismtp</strong> module."
+          . "\n\nHave a good day!";
+  if (isset($params["body"]) && !empty($params["body"])) {
+    $body = $params["body"];
+  }
+  $message['body'] = $body;
+
+  // Change the Content-Type from "text/plain" -> "text/html"
+  if (isset($params["html"]) && $params["html"]) {
+    if (isset($message["headers"]["Content-Type"])) {
+      $contentType = $message["headers"]["Content-Type"];
+      $contentType = str_replace("text/plain", "text/html", $contentType);
+      $message["headers"]["Content-Type"] = $contentType;
+    }
   }
 }
 

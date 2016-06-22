@@ -48,6 +48,7 @@ class ConfigNode {
    * param to add custom emails (for testing).
    *
    * @param array $optionals
+   *
    * @return array
    */
   public static function getListOfSendersWithConfiguration($optionals = []) {
@@ -56,11 +57,11 @@ class ConfigNode {
     $nids = array_keys($listElements);
     $nodes = node_load_multiple($nids);
     foreach ($nodes as $node) {
-      if ($senderEmail = self::getConfigNodeValue($node, 'field_smtp_email', false)) {
-        $answer[$senderEmail] = $senderEmail . ' - ('.$node->title.')';
+      if ($senderEmail = self::getConfigNodeValue($node, 'field_smtp_email', FALSE)) {
+        $answer[$senderEmail] = $senderEmail . ' - (' . $node->title . ')';
       }
     }
-    if(is_array($optionals)) {
+    if (is_array($optionals)) {
       $answer = array_merge($answer, $optionals);
     }
     return $answer;
@@ -124,12 +125,13 @@ class ConfigNode {
    *
    * @return bool
    */
-  public static function getConfigNodeValue($node, $fieldName, $default = false, $valueKey = "value") {
+  public static function getConfigNodeValue($node, $fieldName, $default = FALSE,
+                                            $valueKey = "value") {
     $answer = $default;
     if (isset($node->$fieldName)) {
       /** @var array $field */
       $field = $node->$fieldName;
-      if(isset($field[LANGUAGE_NONE][0][$valueKey])) {
+      if (isset($field[LANGUAGE_NONE][0][$valueKey])) {
         $answer = $field[LANGUAGE_NONE][0][$valueKey];
       }
     }

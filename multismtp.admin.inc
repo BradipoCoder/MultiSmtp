@@ -1,12 +1,4 @@
 <?php
-
-/**
- * @file
- * Administrative page code for the smtp module.
- *
- */
-
-
 /**
  * Administrative settings.
  *
@@ -66,7 +58,7 @@ function multismtp_admin_settings() {
     '#type' => 'textfield',
     '#title' => t('Configuration Node Type'),
     '#default_value' => \MultiSmtp\ConfigNode::getConfigNodeTypeMachineName(),
-    '#disabled' => true,
+    '#disabled' => TRUE,
     '#description' => t('The machine name of the node type where you are storing your smtp configurations.'),
   );
   $form['config']['multismtp_default_config_node'] = array(
@@ -119,30 +111,34 @@ function multismtp_admin_settings_validate($form, &$form_state) {
 }
 
 /**
- * Submit handler().
+ * Submit handler.
+ *
+ * @param array $form
+ * @param array $form_state
  */
 function multismtp_admin_settings_form_submit($form, &$form_state) {
-  /*
-  // Check if SMTP status has been changed.
   if (
-    (!variable_get('smtp_on', FALSE) && $form_state['values']['smtp_on'])
-    || (variable_get('smtp_on', FALSE) && !$form_state['values']['smtp_on'])
+    (!variable_get('multismtp_enabled', FALSE)
+     && $form_state['values']['multismtp_enabled'])
+    || (variable_get('multismtp_enabled', FALSE)
+        && !$form_state['values']['multismtp_enabled'])
   ) {
-    $mail_modes = variable_get('mail_system', array('default-system' => 'DefaultMailSystem'));
+    $mail_systems = variable_get('mail_system', ['default-system' => 'DefaultMailSystem']);
 
     // Turning on.
-    if ($form_state['values']['smtp_on']) {
-      variable_set('smtp_previous_mail_system', $mail_modes['default-system']);
-      $mail_modes['default-system'] = 'SmtpMailSystem';
+    if ($form_state['values']['multismtp_enabled']) {
+      variable_set('multismtp_previous_mail_systems', $mail_systems);
+      foreach ($mail_systems as &$mail_system) {
+        $mail_system = 'MultiSmtpMailSystem';
+      }
     }
     // Turning off.
     else {
-      $mail_modes['default-system'] = variable_get('smtp_previous_mail_system', 'DefaultMailSystem');
+      $mail_systems = variable_get('multismtp_previous_mail_systems', ['default-system' => 'DefaultMailSystem']);
     }
 
-    variable_set('mail_system', $mail_modes);
+    variable_set('mail_system', $mail_systems);
   }
-  */
 }
 
 
@@ -157,40 +153,51 @@ function multismtp_admin_tests($form, &$form_state) {
   global $user;
 
   $emailToTest = '';
-  if(isset($form_state["input"]["test_from_email"]) && $form_state["input"]["test_from_email"]) {
+  if (isset($form_state["input"]["test_from_email"])
+      && $form_state["input"]["test_from_email"]
+  ) {
     $emailToTest = $form_state["input"]["test_from_email"];
   }
 
-  if($emailToTest) {
+  if ($emailToTest) {
     $sender = '';
-    if($emailToTest == 'custom') {
-      if(isset($form_state["input"]["test_from_email_custom"]) && $form_state["input"]["test_from_email_custom"]) {
+    if ($emailToTest == 'custom') {
+      if (isset($form_state["input"]["test_from_email_custom"])
+          && $form_state["input"]["test_from_email_custom"]
+      ) {
         $sender = $form_state["input"]["test_from_email_custom"];
       }
-    } else {
+    }
+    else {
       $sender = $emailToTest;
     }
 
     $recepient = '';
-    if(isset($form_state["input"]["test_to_email"]) && $form_state["input"]["test_to_email"]) {
+    if (isset($form_state["input"]["test_to_email"])
+        && $form_state["input"]["test_to_email"]
+    ) {
       $recepient = $form_state["input"]["test_to_email"];
     }
 
-    if($sender && $recepient) {
-      _multismtp_admin_tests_test_configuration($sender, $recepient);
+    if ($sender && $recepient) {
+      $params = [
+        'subject' => isset($form_state["input"]["subject"]) ? $form_state["input"]["subject"] : "",
+        'body' => isset($form_state["input"]["body"]) ? $form_state["input"]["body"] : "",
+        'html' => isset($form_state["input"]["html"])
+                  && $form_state["input"]["html"],
+      ];
+      _multismtp_admin_tests_test_configuration($sender, $recepient, $params);
     }
   }
 
-
-
-  $senders = \MultiSmtp\ConfigNode::getListOfSendersWithConfiguration(['custom'=>'Custom Email']);
+  $senders = \MultiSmtp\ConfigNode::getListOfSendersWithConfiguration(['custom' => 'Custom Email']);
 
   $form['test']['test_from_email'] = [
     '#type' => 'select',
     '#title' => t('From'),
     '#options' => $senders,
     '#default_value' => $emailToTest,
-    '#required' => true,
+    '#required' => TRUE,
     '#description' => t('Select a sender.'),
   ];
 
@@ -218,14 +225,34 @@ function multismtp_admin_tests($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('To'),
     '#default_value' => $user->mail,
-    '#required' => true,
+    '#required' => TRUE,
     '#description' => t('Send mail to.'),
   ];
+
+  $form['test']['subject'] = [
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => "MultiSmtp Test E-mail",
+    '#description' => t('The subject of the message.'),
+  ];
+
+  $form['test']['body'] = [
+    '#type' => 'textarea',
+    '#title' => t('Body'),
+    '#default_value' => "This E-mail was sent through the <strong>multismtp</strong> module.\n\nHave a good day!",
+    '#description' => t('The body of the message. You can use Html markup as well.'),
+  ];
+
+  $form['test']['html'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Html'),
+    '#description' => t('Senf Html or Text message.'),
+  );
 
   $form['test']['test'] = [
     '#type' => 'button',
     '#value' => t('Test'),
-    '#executes_submit_callback' => false,
+    '#executes_submit_callback' => FALSE,
     '#submit' => array('multismtp_admin_tests_test'),
   ];
 
@@ -233,19 +260,22 @@ function multismtp_admin_tests($form, &$form_state) {
 }
 
 /**
- * Tests a configuration node
+ * Tests a configuration node by sending a mail through drupal_mail
  *
  * @param string $emailToTest
  * @param string $recepient
+ * @param array $params
  *
  * @throws \Exception
  */
-function _multismtp_admin_tests_test_configuration($emailToTest, $recepient) {
+function _multismtp_admin_tests_test_configuration($emailToTest, $recepient,
+                                                   $params = []) {
   try {
-    $message = drupal_mail('multismtp', 'test', $recepient, LANGUAGE_NONE, [], $emailToTest, true);
-    if(isset($message['result']) && $message['result']) {
+    $message = drupal_mail('multismtp', 'test', $recepient, LANGUAGE_NONE, $params, $emailToTest, TRUE);
+    if (isset($message['result']) && $message['result']) {
       drupal_set_message(t("E-mail sent to $recepient."));
-    } else {
+    }
+    else {
       drupal_set_message("Send failed. " . json_encode($message), 'warning');
     }
   } catch(\Exception $e) {
