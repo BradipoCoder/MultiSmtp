@@ -26,7 +26,7 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
         == MULTISMTP_LOGGING_ALL
     ) {
       //dpm($smtpConfig, "SMTP-CONFIG(FORMAT)");
-      dpm($message, "MESSAGE(FORMAT)");
+      //dpm($message, "MESSAGE(FORMAT)");
     }
 
     // Fix body
@@ -90,7 +90,7 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
         == MULTISMTP_LOGGING_ALL
     ) {
       //dpm($smtpConfig, "SMTP-CONFIG(MAIL)");
-      dpm($message, "MESSAGE(MAIL)");
+      //dpm($message, "MESSAGE(MAIL)");
     }
 
     $smtp_server = ConfigNode::getConfigNodeValue($smtpConfig, 'field_smtp_server', FALSE);
@@ -123,7 +123,6 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
                . ' (multismtp)';
 
     $CTA = $this->convertContentTypeStringToArray(isset($message["headers"]["Content-Type"]) ? $message["headers"]["Content-Type"] : '');
-    dpm($CTA, "CTA");
 
     // The transport
     $transport = \Swift_SmtpTransport::newInstance($smtp_server, $smtp_port);
@@ -154,6 +153,11 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
     }
 
     // Send mail
+    if (variable_get('multismtp_debugging', MULTISMTP_LOGGING_ERRORS)
+        == MULTISMTP_LOGGING_ALL
+    ) {
+      multismtp_debug('multismtp', 'Sending: %message.', ['%message' => print_r($message, TRUE)], WATCHDOG_DEBUG);
+    }
     $failedRecipients = [];
     $mailer = \Swift_Mailer::newInstance($transport);
     $successCount = $mailer->send($swiftMessage, $failedRecipients);
@@ -163,7 +167,6 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
       multismtp_debug('multismtp', 'Error sending mail to %to', ['%to' => json_encode($failedRecipients)], WATCHDOG_ERROR);
     }
 
-    multismtp_debug('multismtp', 'Sending: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
     return $result;
   }
 
