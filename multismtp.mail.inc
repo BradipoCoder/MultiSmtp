@@ -22,7 +22,11 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
    */
   public function format(array $message) {
     $smtpConfig = \MultiSmtp\ConfigNode::getConfigNodeByEmail($message["from"]);
-    //dpm($smtpConfig, "SMTP-CONFIG(FORMAT)");
+    if (variable_get('multismtp_debugging', MULTISMTP_LOGGING_ERRORS)
+        == MULTISMTP_LOGGING_ALL
+    ) {
+      dpm($smtpConfig, "SMTP-CONFIG(FORMAT)");
+    }
 
     //force sender name
     /*
@@ -30,16 +34,21 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
       $message["from"] = $fromName . ' <' . $message["from"] . '>';
     }*/
 
-    //html
+    // Text or Html
     if (is_array($message['body'])) {
       $message['body'] = implode("\n\n", $message['body']);
     }
-    if (ConfigNode::getConfigNodeValue($smtpConfig, 'field_smtp_allow_html', '0') == "0") {
+    if (ConfigNode::getConfigNodeValue($smtpConfig, 'field_smtp_allow_html', '0')
+        == "1"
+    ) {
+      $message['body'] = nl2br($message['body']);
+    }
+    else {
       $message['body'] = drupal_html_to_text($message['body']);
       $message['body'] = drupal_wrap_mail($message['body']);
     }
 
-    multismtp_debug('multismtp', 'Formatted: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
+    //multismtp_debug('multismtp', 'Formatted: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
     return $message;
   }
 
@@ -83,10 +92,14 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
    */
   protected function mailWithoutQueue(array $message) {
     $smtpConfig = \MultiSmtp\ConfigNode::getConfigNodeByEmail($message["from"]);
-    //dpm($smtpConfig, "SMTP-CONFIG(MAIL)");
+    if (variable_get('multismtp_debugging', MULTISMTP_LOGGING_ERRORS)
+        == MULTISMTP_LOGGING_ALL
+    ) {
+      dpm($smtpConfig, "SMTP-CONFIG(MAIL)");
+    }
 
-    $to = $message['to'];
-    $from = $message['from'];
+    $from = $this->convertFromStringToArray($message['from']);
+    $to = $this->convertFromStringToArray($message['to']);
     $body = $message['body'];
     $headers = $message['headers'];
     $subject = $message['subject'];
@@ -130,5 +143,39 @@ class MultiSmtpMailSystem implements \MailSystemInterface {
 
     multismtp_debug('multismtp', 'Sending: %message.', ['%message' => json_encode($message)], WATCHDOG_DEBUG);
     return $result;
+  }
+
+  /**
+   * Converts from/to strings like:
+   *  sender@mail.com             =>      [sender@mail.com]
+   *  s1@mail.com,s2@mail.com     =>      [s1@mail.com, s2@mail.com]
+   *  "Sender 1" <s1@mail.com>    =>      [s1@mail.com => "Sender 1"]
+   *
+   * Purposely, does NOT check if email address is valid (that should be done later)
+   *
+   * @param string $from
+   *
+   * @return array
+   */
+  protected function convertFromStringToArray($from) {
+    $answer = [];
+    $mails = [];
+    if (strpos($from, ",")) {
+      $mails = explode(",", $from);
+    }
+    else {
+      $mails[] = trim($from);
+    }
+    foreach ($mails as $mail) {
+      if (preg_match('/^([^<]*)<([^>]*)>.*$/', $mail, $m)) {
+        $emailAddress = trim($m[2]);
+        $emailName = trim($m[1]);
+        $answer[$emailAddress] = $emailName;
+      }
+      else {
+        $answer[] = $mail;
+      }
+    }
+    return $answer;
   }
 }
