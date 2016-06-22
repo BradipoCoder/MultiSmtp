@@ -172,21 +172,21 @@ function multismtp_admin_tests($form, &$form_state) {
       $sender = $emailToTest;
     }
 
-    $recepient = '';
+    $recipient = '';
     if (isset($form_state["input"]["test_to_email"])
         && $form_state["input"]["test_to_email"]
     ) {
-      $recepient = $form_state["input"]["test_to_email"];
+      $recipient = $form_state["input"]["test_to_email"];
     }
 
-    if ($sender && $recepient) {
+    if ($sender && $recipient) {
       $params = [
         'subject' => isset($form_state["input"]["subject"]) ? $form_state["input"]["subject"] : "",
         'body' => isset($form_state["input"]["body"]) ? $form_state["input"]["body"] : "",
         'html' => isset($form_state["input"]["html"])
                   && $form_state["input"]["html"],
       ];
-      _multismtp_admin_tests_test_configuration($sender, $recepient, $params);
+      _multismtp_admin_tests_test_configuration($sender, $recipient, $params);
     }
   }
 
@@ -263,17 +263,17 @@ function multismtp_admin_tests($form, &$form_state) {
  * Tests a configuration node by sending a mail through drupal_mail
  *
  * @param string $emailToTest
- * @param string $recepient
+ * @param string $recipient
  * @param array $params
  *
  * @throws \Exception
  */
-function _multismtp_admin_tests_test_configuration($emailToTest, $recepient,
+function _multismtp_admin_tests_test_configuration($emailToTest, $recipient,
                                                    $params = []) {
   try {
-    $message = drupal_mail('multismtp', 'test', $recepient, LANGUAGE_NONE, $params, $emailToTest, TRUE);
+    $message = drupal_mail('multismtp', 'test', $recipient, LANGUAGE_NONE, $params, $emailToTest, TRUE);
     if (isset($message['result']) && $message['result']) {
-      drupal_set_message(t("E-mail sent to $recepient."));
+      drupal_set_message(t("E-mail sent to $recipient."));
     }
     else {
       drupal_set_message("Send failed. " . json_encode($message), 'warning');
